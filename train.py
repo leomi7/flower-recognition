@@ -67,7 +67,7 @@ model.fit(trainData, trainLabels)
 print ("[INFO] evaluating model...")
 f = open(results, "w")
 rank_1 = 0
-rank_5 = 0
+# rank_5 = 0
 
 # loop over test data
 for (label, features) in zip(testLabels, testData):
@@ -81,16 +81,16 @@ for (label, features) in zip(testLabels, testData):
 		rank_1 += 1
 
 	# rank-5 prediction increment
-	if label in predictions:
-		rank_5 += 1
+	# if label in predictions:
+	# 	rank_5 += 1
 
 # convert accuracies to percentages
 rank_1 = (rank_1 / float(len(testLabels))) * 100
-rank_5 = (rank_5 / float(len(testLabels))) * 100
+# rank_5 = (rank_5 / float(len(testLabels))) * 100
 
 # write the accuracies to file
 f.write("Rank-1: {:.2f}%\n".format(rank_1))
-f.write("Rank-5: {:.2f}%\n\n".format(rank_5))
+# f.write("Rank-5: {:.2f}%\n\n".format(rank_5))
 
 # evaluate the model of test data
 preds = model.predict(testData)
@@ -111,7 +111,5 @@ labels = sorted(list(os.listdir(train_path)))
 
 # plot the confusion matrix
 cm = confusion_matrix(testLabels, preds)
-sns.heatmap(cm,
-            annot=True,
-            cmap="Set2")
+sns.heatmap(cm,annot=True,cmap="Set2")
 plt.show()
