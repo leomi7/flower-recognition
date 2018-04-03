@@ -1,6 +1,10 @@
-from sklearn.ensemble import RandomForestClassifier
+# organize imports
+from __future__ import print_function
+
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.datasets import make_classification
 from sklearn.metrics import confusion_matrix
 import numpy as np
 import h5py
@@ -55,15 +59,76 @@ print ("[INFO] test data   : {}".format(testData.shape))
 print ("[INFO] train labels: {}".format(trainLabels.shape))
 print ("[INFO] test labels : {}".format(testLabels.shape))
 
-parameter_gridsearch = {
-                 'max_depth' : [3, 4],  #depth of each decision tree
-                 'n_estimators': [50, 20],  #count of decision tree
-                 'max_features': ['sqrt', 'auto', 'log2'],
-                 'min_samples_split': [2],
-                 'min_samples_leaf': [1, 3, 4],
-                 'bootstrap': [True, False],
-                 }
+# use rf as the model
+print ("[INFO] creating model...")
+model = RandomForestClassifier(n_estimators=5, min_samples_leaf=3)
+model.fit(trainData, trainLabels)
 
-# use logistic regression as the model
-print("[INFO] creating model...")
-model = RandomForestClassifier()
+# use rank-1 and rank-5 predictions
+print ("[INFO] evaluating model...")
+f = open(results, "w")
+rank_1 = 0
+# rank_5 = 0
+
+# loop over test data
+for (label, features) in zip(testLabels, testData):
+	# predict the probability of each class label and
+	# take the top-5 class labels
+	predictions = model.predict_proba(np.atleast_2d(features))[0]
+	predictions = np.argsort(predictions)[::-1][:5]
+
+	# rank-1 prediction increment
+	if label == predictions[0]:
+		rank_1 += 1
+
+
+# convert accuracies to percentages
+rank_1 = (rank_1 / float(len(testLabels))) * 100
+# rank_5 = (rank_5 / float(len(testLabels))) * 100
+
+# write the accuracies to file
+f.write("Rank-1: {:.2f}%\n".format(rank_1))
+# f.write("Rank-5: {:.2f}%\n\n".format(rank_5))
+
+# evaluate the model of test data
+preds = model.predict(testData)
+
+# write the classification report to file
+f.write("{}\n".format(classification_report(testLabels, preds)))
+f.close()
+
+# dump classifier to file
+print ("[INFO] saving model...")
+pickle.dump(model, open(classifier_path, 'wb'))
+
+# display the confusion matrix
+print ("[INFO] confusion matrix")
+
+# get the list of training lables
+labels = sorted(list(os.listdir(train_path)))
+
+# plot the confusion matrix
+cm = confusion_matrix(testLabels, preds)
+fig = sns.heatmap(cm,annot=True,cmap="Set2")
+sv = fig.get_figure()
+sv.savefig("confusion_mat.png")
+# plt.show()
+
+# Cross Validation
+from sklearn.model_selection import KFold, cross_val_score
+# KFold()
+k_fold = KFold(n_splits=10, shuffle=True, random_state=0)
+model = LogisticRegression(random_state=seed)
+h5f_data  = h5py.File(features_path, 'r')
+h5f_label = h5py.File(labels_path, 'r')
+
+features_string = h5f_data['dataset_1']
+labels_string   = h5f_label['dataset_1']
+
+features = np.array(features_string)
+labels   = np.array(labels_string)
+
+h5f_data.close()
+h5f_label.close()
+
+print(cross_val_score(model, features, labels, cv=k_fold, n_jobs=1))
